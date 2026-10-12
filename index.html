@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>חידון ציוצי הציפורים 🐦</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#24332b;background:linear-gradient(135deg,#e7f5e8 0%,#fff7df 48%,#e5f3f8 100%)}
+*{box-sizing:border-box}body{margin:0;padding:20px;min-height:100vh;display:flex;justify-content:center;align-items:center}
+main{width:min(760px,100%);background:linear-gradient(180deg,#ffffff 0%,#fffefa 100%);border:2px solid #d8ead7;border-radius:24px;padding:clamp(18px,4vw,32px);box-shadow:0 12px 40px #1e35201a}
+header{text-align:center}h1{margin:0 0 6px;font-size:clamp(1.6rem,4vw,2.2rem);color:#276749;text-shadow:0 1px 0 #e4f4d9}.sub{color:#617267;margin:0 0 18px}
+.progress{height:8px;background:#e7eee6;border-radius:99px;overflow:hidden;margin:18px 0}.bar{height:100%;width:0;background:#4f8b65;transition:width .2s}
+.topline{display:flex;justify-content:space-between;color:#617267;font-size:.95rem;gap:12px}
+.listen{display:block;margin:22px auto 18px;border:0;border-radius:16px;padding:15px 24px;background:linear-gradient(135deg,#26734d,#3686a0);color:white;font-size:1.1rem;font-weight:700;cursor:pointer;box-shadow:0 5px 0 #d7e8d5;transition:transform .15s,filter .15s}
+.listen:hover{background:#1f553b}.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.answer{border:2px solid #dce6dc;background:linear-gradient(135deg,#fbfdfb,#f3f9f2);border-radius:14px;padding:14px 10px;font-size:1rem;cursor:pointer;color:#26372c;transition:transform .12s,border-color .12s}
+.answer:hover:not(:disabled){border-color:#6b9e78;background:#f0f8f0;transform:translateY(-1px)}.answer:disabled{cursor:default}.answer.correct{background:#e2f5e5;border-color:#3d9654}.answer.wrong{background:#fff0e9;border-color:#d87855}
+.feedback{text-align:center;min-height:28px;font-weight:700;margin:14px 0}
+.reveal{display:none;text-align:center;border-top:1px solid #e5ece5;padding-top:18px}.reveal.show{display:block}.reveal img{width:min(100%,360px);max-height:280px;object-fit:contain;border-radius:16px;background:#f3f5f1}.fact{color:#526258;line-height:1.6}
+.next{display:block;margin:20px auto 0;background:linear-gradient(135deg,#b86a36,#c58a28);color:white;border:0;border-radius:12px;padding:12px 22px;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 4px 0 #f0dfbd}
+.end{text-align:center;display:none}.end.show{display:block}.end .score{font-size:2.2rem;font-weight:800}
+.small{font-size:.8rem;color:#77857a;margin-top:22px;text-align:center}
+@media(max-width:480px){body{padding:10px}.answers{grid-template-columns:1fr}.answer{padding:12px}.listen{width:100%}}
+</style>
+</head>
+<body><main>
+<header><h1>חידון ציוצי הציפורים 🐦</h1><p class="sub">מקשיבים, מנחשים, ומגלים משהו מעניין</p></header>
+<section id="game">
+<div class="topline"><span id="counter">שאלה 1 מתוך 20</span><span>ניקוד: <b id="score">0</b></span></div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<p style="text-align:center">איזו ציפור אתם שומעים?</p>
+<button class="listen" id="listen">🔊 השמע ציוץ</button>
+<div class="answers" id="answers"></div>
+<div class="feedback" id="feedback" aria-live="polite"></div>
+<div class="reveal" id="reveal"><h2 id="birdName"></h2><img id="birdImage" alt="תמונת הציפור"><p class="fact" id="fact"></p><button class="next" id="next">לשאלה הבאה ←</button></div>
+</section>
+<section class="end" id="end"><h2>כל הכבוד! 🎉</h2><p>סיימתם את חידון הציפורים.</p><div class="score" id="finalScore"></div><p id="endMessage"></p><button class="next" id="restart">שחקו שוב ↻</button></section>
+<p class="small">החידון משתמש בקובצי מדיה ממקורות חיצוניים. נדרש חיבור לאינטרנט.</p>
+</main>
+<script>
+const birds = [
+  {
+    "name": "דרור הבית",
+    "en": "House Sparrow",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/House_Sparrows_chirping.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Passer_domesticus_(%E2%99%82).jpg",
+    "fact": "דרורים חיים לעיתים קרובות בקרבת בני אדם, ומתקשרים בציוצים קצרים."
+  },
+  {
+    "name": "צופית בוהקת",
+    "en": "Palestine Sunbird",
+    "audio": "https://xeno-canto.org/293470/download",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Palestine_sunbird_(Cinnyris_osea_osea)_male.jpg",
+    "fact": "הזכר של הצופית בולט בצבעיו המתכתיים, במיוחד באור השמש."
+  },
+  {
+    "name": "בולבול ממושקף",
+    "en": "White-spectacled Bulbul",
+    "audio": "https://xeno-canto.org/395627/download",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Pycnonotus_xanthopygos_001.jpg",
+    "fact": "הבולבול הממושקף נפוץ בגינות וביישובים בישראל."
+  },
+  {
+    "name": "שחרור",
+    "en": "Eurasian Blackbird",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Turdus_merula_2.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Common_Blackbird_Turdus_merula_syriacus,_Haifa,_Israel_8.png",
+    "fact": "לשחרור שירה עשירה ומלודית, ולעיתים שומעים אותו עוד לפני שרואים אותו."
+  },
+  {
+    "name": "ירגזי מצוי",
+    "en": "Great Tit",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Parus_major.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Great_Tit_(Parus_major)_male.jpg",
+    "fact": "הירגזי הוא ציפור סקרנית ופעילה, שמבקרת לעיתים קרובות במתקני האכלה."
+  },
+  {
+    "name": "עורב אפור",
+    "en": "Hooded Crow",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Corvus_cornix.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Hooded_Crow_-_Corvus_cornix.jpg",
+    "fact": "עורבים נחשבים לציפורים חכמות המסוגלות ללמוד ולפתור בעיות."
+  },
+  {
+    "name": "עורבני",
+    "en": "Eurasian Jay",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Eichelh%C3%A4her_ruf.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Eurasian_jay-(Garrulus_glandarius).jpg",
+    "fact": "עורבניים מחביאים בלוטים וזרעים, וכך יכולים לעזור להפיץ עצים."
+  },
+  {
+    "name": "מיינה מצויה",
+    "en": "Common Myna",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/CommonMynaCalls.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Common_Myna_-_Acridotheres_tristis.JPG",
+    "fact": "מיינות מסוגלות לחקות קולות מגוונים, והן מסתגלות היטב לסביבה עירונית."
+  },
+  {
+    "name": "נקר סורי",
+    "en": "Syrian Woodpecker",
+    "audio": "https://xeno-canto.org/667315/download",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Syrian_woodpecker_(36487115441).jpg",
+    "fact": "נקרים מתופפים על גזעים כדי לחפש מזון ולתקשר."
+  },
+  {
+    "name": "דררה",
+    "en": "Rose-ringed Parakeet",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Psittacula_krameri_-_Rose-ringed_Parakeet_XC35091.mp3",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Psittacula_krameri,_Israel_2.jpg",
+    "fact": "דררות הן תוכים ירוקים ורועשים, ולעיתים קרובות אפשר לראות אותן בלהקות."
+  },
+  {
+    "name": "יונה",
+    "en": "Pigeon",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Dove_cooing.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Columba_livia_(1)_-_30_April_2026.jpg",
+    "fact": "יונים יודעות למצוא את דרכן למרחקים ונחקרו רבות בזכות יכולת הניווט שלהן."
+  },
+  {
+    "name": "ירקון מצוי",
+    "en": "European Greenfinch",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Carduelis_chloris.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/European_Greenfinch_(Chloris_chloris),_Ein_Afek,_Israel.jpg",
+    "fact": "הירקון הוא פרוש קטן עם גוונים צהובים-ירוקים בולטים בכנפיים."
+  },
+  {
+    "name": "סבכי שחור־כיפה",
+    "en": "Eurasian Blackcap",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Sylvia_atricapilla.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Sylvia_atricapilla_male.jpg",
+    "fact": "הכיפה הכהה שעל ראש הזכר היא סימן זיהוי בולט של המין."
+  },
+  {
+    "name": "תור צווארון",
+    "en": "Eurasian Collared Dove",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Streptopelia_decaocto_-_Eurasian_Collared_Dove_-_XC82758.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Streptopelia_decaocto,_H%C4%83rman,_Rom%C3%A2nia_(34881606270).jpg",
+    "fact": "לתור צווארון יש פס שחור דק בעורף, שממנו קיבל את שמו."
+  },
+  {
+    "name": "צוצלת",
+    "en": "Laughing Dove",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/S-senegalensis.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/140_Laughing_dove_in_Twyfelfontein_Photo_by_Giles_Laurent.jpg",
+    "fact": "הצוצלת משמיעה קול מתגלגל שחוזר על עצמו ונשמע כמעט כמו צחוק."
+  },
+  {
+    "name": "נחליאלי לבן",
+    "en": "White Wagtail",
+    "audio": "https://xeno-canto.org/212874/download",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/20180415_015_Winterswijk_Witte_kwikstaart_(40785272624).jpg",
+    "fact": "הנחליאלי מזוהה בזכות זנבו הארוך שהוא מניע מעלה ומטה בזמן הליכה."
+  },
+  {
+    "name": "פרוש מצוי",
+    "en": "Common Chaffinch",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Fringilla_coelebs.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Fringilla_coelebs_(5577610542).jpg",
+    "fact": "לפרוש המצוי שירה מובחנת, והוא אחד הפרושים הנפוצים באירופה."
+  },
+  {
+    "name": "עפרוני מצויץ",
+    "en": "Crested Lark",
+    "audio": "https://xeno-canto.org/1134295/download",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Crested_Lark_(Galerida_cristata),_Oman.jpg",
+    "fact": "העפרוני המצויץ נוהג לחפש מזון על הקרקע, ויש לו ציצית קטנה על הראש."
+  },
+  {
+    "name": "סנונית הרפתות",
+    "en": "Barn Swallow",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Hirundo_rustica_-_Barn_Swallow_-_XC83449.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Barn_swallow_(Hirundo_rustica_rustica).jpg",
+    "fact": "הסנונית היא מעופפת זריזה שתופסת חרקים באוויר."
+  },
+  {
+    "name": "דוכיפת",
+    "en": "Eurasian Hoopoe",
+    "audio": "https://commons.wikimedia.org/wiki/Special:FilePath/Upupa_epops.ogg",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Upupa_epops_Madrid_02.jpg",
+    "fact": "הדוכיפת בולטת בציצית הכתומה-שחורה שעל ראשה."
+  }
+];
+let order=[], index=0, score=0, answered=false, currentAudio=null;
+function stopAudio(){if(currentAudio){currentAudio.pause();currentAudio.currentTime=0;currentAudio=null;}}
+const $=id=>document.getElementById(id);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function start(){order=shuffle([...birds.keys()]);index=0;score=0;$('score').textContent=score;$('game').style.display='block';$('end').classList.remove('show');render()}
+function render(){
+ stopAudio(); answered=false; const bird=birds[order[index]];
+ $('counter').textContent=`שאלה ${index+1} מתוך ${order.length}`;
+ $('bar').style.width=`${index/order.length*100}%`;
+ $('feedback').textContent='';$('reveal').classList.remove('show');
+ $('birdImage').src='';$('birdImage').alt='תמונת '+bird.name;
+ $('listen').disabled=false;
+ const wrong=shuffle(birds.map((b,i)=>({b,i})).filter(x=>x.i!==order[index])).slice(0,3).map(x=>x.b);
+ const opts=shuffle([bird,...wrong]);
+ $('answers').innerHTML='';
+ opts.forEach(option=>{
+  const btn=document.createElement('button');btn.className='answer';btn.textContent=option.name;
+  btn.addEventListener('click',()=>choose(btn,option, bird));$('answers').appendChild(btn);
+ });
+ $('next').textContent=index===order.length-1?'לתוצאות ←':'לשאלה הבאה ←';
+}
+function play(){stopAudio();const bird=birds[order[index]];currentAudio=new Audio(bird.audio);currentAudio.play().catch(()=>{$('feedback').textContent='הצליל לא נטען. נסו שוב או המשיכו לשאלה הבאה.'})}
+function choose(btn,chosen,correct){
+ if(answered)return;stopAudio();answered=true;
+ [...$('answers').children].forEach(b=>b.disabled=true);
+ const ok=chosen===correct;
+ btn.classList.add(ok?'correct':'wrong');
+ if(ok){score++;$('score').textContent=score;$('feedback').textContent='נכון מאוד! 🎉'}
+ else {$('feedback').textContent='לא הפעם 🙂 התשובה הנכונה: '+correct.name;[...$('answers').children].find(b=>b.textContent===correct.name)?.classList.add('correct')}
+ $('listen').disabled=false;
+ $('birdName').textContent=correct.name+' · '+correct.en;
+ $('birdImage').src=correct.image;
+ $('fact').textContent=correct.fact;
+ $('reveal').classList.add('show');
+}
+function next(){if(index<order.length-1){index++;render()}else finish()}
+function finish(){stopAudio();$('game').style.display='none';$('end').classList.add('show');$('bar').style.width='100%';$('finalScore').textContent=`${score} מתוך ${order.length}`;$('endMessage').textContent=score>=16?'אלופים! אתם ממש מכירים את הציפורים.':score>=10?'יפה מאוד! עוד כמה סיבובים ותכירו עוד ציוצים.':'כל התחלה היא טובה — נסו שוב וגלו עוד ציוצים.'}
+$('listen').addEventListener('click',play);$('next').addEventListener('click',next);$('restart').addEventListener('click',start);
+start();
+</script></body></html>
